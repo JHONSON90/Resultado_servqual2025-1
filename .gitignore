@@ -8,3 +8,4 @@ venv
 *.TMP
 *.json
 *.md
+.streamlit
