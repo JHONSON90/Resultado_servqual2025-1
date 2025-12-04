@@ -1,0 +1,10 @@
+__pycache__
+.env
+venv
+.venv
+*.xlsx
+*.csv
+*.tmp
+*.TMP
+*.json
+*.md

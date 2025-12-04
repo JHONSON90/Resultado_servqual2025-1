@@ -1,0 +1,3 @@
+[theme]
+chartCategoricalColors = ["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"]
+chartSequentialColors = ["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"]

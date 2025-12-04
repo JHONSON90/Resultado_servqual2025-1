@@ -1,0 +1,20 @@
+
+7 colores = color_continuous_scale=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"]
+
+5 colores = color_continuous_scale = ["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"]
+
+5 colores = color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"] pies 
+
+3 colores = color_discrete_sequence=["#006400","#8B0000", "#FFD700"] para niveles de satisfacción verde rojo amarillo
+
+3 colores = color_discrete_sequence=["#006400","#FFD700","#8B0000"] para niveles de satisfacción verde amarillo rojo
+
+3 colores = color_discrete_sequence=["#8B0000","#FFD700", "#006400"] para niveles de satisfacción rojo amarillo verde
+ 
+3 colores = color_discrete_sequence=["#FFD700","#8B0000", "#006400"] para niveles de satisfacción amarillo rojo verde
+
+7 colores con subcategoria = color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"]
+
+colores invertidos y quitando la leyenda
+, color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"][::-1]
+fig.update_layout(showlegend=False)
