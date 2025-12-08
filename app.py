@@ -1,6 +1,11 @@
 import streamlit as st
 import polars as pl
 import plotly.express as px
+from datetime import datetime
+from streamlit_gsheets import GSheetsConnection
+import traceback
+import time
+
 
 MI_ESCALA = [
     (0.0,   "#8B0000"),   # rojo muy oscuro → peor
@@ -18,20 +23,92 @@ px.defaults.color_continuous_scale = MI_ESCALA
 
 
 st.set_page_config(page_title="Encuestas Empopasto", layout="wide")
-st.sidebar.page_link("app.py", label="Generalidades")
-st.sidebar.page_link("pages/Cap_Respuesta.py", label="Capacidad de Respuesta")
+
+# Ocultar el menú de navegación superior por defecto de Streamlit
+st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Agregar logos y menú en la sidebar
+st.sidebar.image("assets/empopasto_logo.jpg", width="stretch")
+st.sidebar.markdown("---")
+
+# Menú de navegación con iconos profesionales
+st.sidebar.page_link("app.py", label="📊 Generalidades")
+st.sidebar.page_link("pages/aspectos_generales.py", label="📋 Aspectos Generales")
+st.sidebar.page_link("pages/acueducto_alcantarillado.py", label="💧 Acueducto y Alcantarillado")
+st.sidebar.page_link("pages/gestion_comunicacion.py", label="📢 Gestión y Comunicación")
+st.sidebar.page_link("pages/Conclusiones.py", label="✅ Conclusiones")
+
+st.sidebar.markdown("---")
+st.sidebar.image("assets/one_logo.jpg", width=80)
 
 #red, orange, yellow, green, blue, violet, gray/grey, rainbow y primary
 st.title(":blue[Generalidades]")
+
+conn = st.connection("gsheets", type=GSheetsConnection)
+try:
+    df_raw = conn.read(worksheet="Cuantitativas", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    df = pl.from_pandas(df_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Cuantitativas cargadas ({len(df)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Cuantitativas): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()  # Detiene la ejecución si falla
+
+try:
+    df2_raw = conn.read(worksheet="Cualitativas", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    df2 = pl.from_pandas(df2_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Cualitativas cargadas ({len(df2)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Cualitativas): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
+
+try:
+    df3_raw = conn.read(worksheet="Limpia", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    total = pl.from_pandas(df3_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Respuestas totales cargadas ({len(total)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Respuestas totales): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
+
+try:
+    df3_raw = conn.read(worksheet="Latitud_longitud", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    longitudes = pl.from_pandas(df3_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Latitudes y Longitudes cargadas ({len(longitudes)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Latitudes y Longitudes): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
+
+
 st.text("Objetivo: Informar el nivel de satisfacción de los usuarios con los servicios de Empopasto y entregar un análisis completo por dimensión Servqual para orientar acciones de mejora.")
-total = pl.read_csv("Data/Encuestas_ONE - Limpia.csv", separator=",", encoding="utf-8")
-df = pl.read_csv("Formatos_Listos/Cuantitativas.csv", separator=",", encoding="utf-8", schema_overrides={"value": pl.Int64}, ignore_errors=True)
-df2 = pl.read_csv("Formatos_Listos/Cualitativas.csv", separator=",", encoding="utf-8", schema_overrides={"value": pl.String}, ignore_errors=True)
 
 barrios = total.group_by("Barrio").agg(
     pl.len().alias("count")
 )
-longitudes = pl.read_excel("Data/Latitud y longitud.xlsx")
 
 barrios = barrios.join(longitudes, left_on="Barrio", right_on="Barrio / Sector", how="left")
 
@@ -74,4 +151,13 @@ with col4:
     )
     fig = px.pie(estratos, names="Desc Subcategoria", values="count", color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
     st.plotly_chart(fig, width="stretch")
+
+st.markdown("""
+El estudio se fundamenta en la opinión de 600 usuarios residentes en 107 barrios de la ciudad, seleccionados bajo criterios de aleatoriedad para evitar sesgos geográficos. El perfil demográfico obtenido revela un usuario promedio en edad productiva (30 a 50 años), con una alta sensibilidad hacia el costo y la calidad del servicio debido a su condición socioeconómica. Dado que más del 68% de la muestra pertenece a los estratos Bajo-Bajo, Bajo y Medio-Bajo, sumado a un significativo 22.5% del sector comercial, los resultados aquí presentados constituyen un termómetro fiel de la realidad operativa y social que enfrenta la mayoría de la base de clientes de Empopasto en su día a día.
+""")
+
+st.markdown("""
+**Criterios de Interpretación de Resultados:** Para el análisis de los indicadores, el estudio adopta una escala de valoración porcentual alineada con las metas institucionales. Los resultados superiores al 90% se clasifican como Excelencia, indicando el cumplimiento pleno de la expectativa del usuario. El rango entre 80% y 89.9% corresponde a un nivel Muy Satisfactorio, reflejando una percepción positiva consolidada. Los valores situados entre 70% y 79.9% se consideran Satisfactorios, aunque evidencian oportunidades de mejora latentes. Finalmente, cualquier indicador inferior al 70% se tipifica como Insatisfactorio o Crítico, señalando una brecha significativa entre el servicio recibido y las necesidades del usuario que requiere intervención inmediata.
+""")
+
 

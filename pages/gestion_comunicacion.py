@@ -1,3 +1,4 @@
+from turtle import width
 import polars as pl
 import streamlit as st
 import plotly.express as px
@@ -7,7 +8,30 @@ from streamlit_gsheets import GSheetsConnection
 import traceback
 import time
 
+# Ocultar el menú de navegación superior por defecto de Streamlit
+st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Agregar logos y menú en la sidebar
+st.sidebar.image("../assets/empopasto_logo.jpg", width="stretch")
+st.sidebar.markdown("---")
+
+# Menú de navegación con iconos profesionales
+st.sidebar.page_link("app.py", label="📊 Generalidades")
+st.sidebar.page_link("pages/aspectos_generales.py", label="📋 Aspectos Generales")
+st.sidebar.page_link("pages/acueducto_alcantarillado.py", label="💧 Acueducto y Alcantarillado")
+st.sidebar.page_link("pages/gestion_comunicacion.py", label="📢 Gestión y Comunicación")
+st.sidebar.page_link("pages/Conclusiones.py", label="✅ Conclusiones")
+
+st.sidebar.markdown("---")
+st.sidebar.image("../assets/one_logo.jpg", width=80)
 try:
     df_raw = conn.read(worksheet="Cuantitativas", ttl=0)
     # Convertir pandas DataFrame a Polars DataFrame
@@ -56,7 +80,7 @@ p20_ns = df3.filter(pl.col("variable") == "pregunta20")
 
 col1, col2 = st.columns(2)
 with col1:
-    fig = px.bar(p20_ns, x="variable", y=["2023", "2024", "2025"], barmode="group", text_auto=True, title="Nivel de satisfaccion", color_discrete_sequence=["#006400","#FFD700","#8B0000"], height=400)
+    fig = px.bar(p20_ns, x="variable", y=["2023", "2024", "2025"], barmode="group", text_auto=True, title="Nivel de satisfaccion", color_discrete_sequence=["#8B0000","#FFD700","#006400"], height=400)
     fig.update_layout(
     # Ajusta el espacio entre los GRUPOS (Pregunta A vs Pregunta B)
     bargap=0.2,  
@@ -87,15 +111,15 @@ with col1:
         pl.len().alias("count")
     ).filter(pl.col("value") != 0).sort("count", descending=True)
 
-    fig = px.pie(pregunta22, names="value", values="count", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig = px.pie(pregunta22, names="value", values="count", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Respuestas")
     st.plotly_chart(fig, width="stretch")
 with col2:
-    fig = px.bar(pregunta22, color="Desc Subcategoria", y="count", x="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig = px.bar(pregunta22, color="Desc Subcategoria", y="count", x="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Respuestas por Estrato")
     st.plotly_chart(fig, width="stretch")
     
 with col3:
     grafico3 = pregunta22.filter(pl.col("value") < 3)
-    fig = px.bar(grafico3, y="Barrio", x="count", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig = px.bar(grafico3, y="Barrio", x="count", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#228B22","#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Respuestas bajas por Barrio")
     st.plotly_chart(fig, width="stretch")
 
 st.markdown("""
@@ -115,13 +139,13 @@ Estos barrios coinciden con zonas donde, en otras preguntas, ya se observaron in
 
 """)
 
-st.subheader("¿Cómo considera usted la gestión actual de EMPOPASTO?")
+st.markdown("### ¿Cómo considera usted la gestión actual de EMPOPASTO?")
 
 p21_ns = df3.filter(pl.col("variable") == "pregunta21")
 
 col1, col2 = st.columns(2)
 with col1:
-    fig = px.bar(p21_ns, x="variable", y=["2023", "2024", "2025"], barmode="group", text_auto=True, title="Nivel de satisfaccion", color_discrete_sequence=["#006400","#FFD700","#8B0000"], height=400)
+    fig = px.bar(p21_ns, x="variable", y=["2023", "2024", "2025"], barmode="group", text_auto=True, title="Nivel de satisfaccion", color_discrete_sequence=["#006400","#FFD700","#8B0000"], height=480)
     fig.update_layout(
     # Ajusta el espacio entre los GRUPOS (Pregunta A vs Pregunta B)
     bargap=0.2,  
@@ -134,11 +158,11 @@ with col1:
 
 with col2:
     with st.container(
-        height=400, 
+        height=480, 
         horizontal_alignment="center",
         vertical_alignment="center"
     ):
-        st.markdown("""La valoración de la gestión actual de EMPOPASTO presenta una tendencia creciente en los últimos tres años, pasando de 78,4% a 76,72%.  
+        st.markdown("""La valoración de la gestión actual de EMPOPASTO presenta una tendencia creciente en los últimos tres años, pasando de 78,4% a 81,57%.  
     Aunque el indicador continúa en un rango aceptable, la caída acumulada evidencia:  
     :material/arrow_right: Mayor sensibilidad del usuario,  
     :material/arrow_right: Necesidad de fortalecer la comunicación institucional,  
@@ -152,23 +176,23 @@ with col2:
 
 col1, col2 =st.columns(2)
 with col1:
-    pregunta21 = df.filter((pl.col("variable") == "pregunta21")& (pl.col("value") != 0))
+    pregunta21 = df.filter((pl.col("variable") == "pregunta21") & (pl.col("value") != 0))
     pregunta21 = pregunta21.group_by(["Edad", "Desc Subcategoria", "Desc Categoria", "value", "Barrio"]).agg(
     pl.len().alias("count")
     ).sort("count", descending=True)
 
-    fig = px.pie(pregunta21, names="value", values="count", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig = px.pie(pregunta21, names="value", values="count", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Respuestas")
     st.plotly_chart(fig, width="stretch")
     
     pregunta21 = pregunta21.filter(pl.col("value") < 3)
     pregunta21_edad = pregunta21.filter(pl.col("Edad") > 10)
 
-    fig2 = px.bar(pregunta21_edad, x="Edad", y="count", color="value", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig2 = px.histogram(pregunta21_edad, x="Edad", y="count", color="value", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Resultados Bajos por edad")
     st.plotly_chart(fig2)
 with col2:
-    fig3 = px.bar(pregunta21_edad, x="Desc Subcategoria", y="count", color="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig3 = px.bar(pregunta21_edad, x="Desc Subcategoria", y="count", color="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Resultados bajos por estrato")
     st.plotly_chart(fig3)
-    fig4 = px.bar(pregunta21_edad, x="Barrio", y="count", color="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400)
+    fig4 = px.bar(pregunta21_edad, x="Barrio", y="count", color="value", barmode="group", color_discrete_sequence=["#006400","#99EE99", "#FFD700","#FF4444","#CC0000","#8B0000"], height=400, title="Resultados bajos por barrio")
     st.plotly_chart(fig4)
 
 total_indice = df.filter((pl.col("variable") == "pregunta21")& (pl.col("value") != 0))

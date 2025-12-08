@@ -7,6 +7,29 @@ from streamlit_gsheets import GSheetsConnection
 import traceback
 import time
 
+# Ocultar el menú de navegación superior por defecto de Streamlit
+st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Agregar logos y menú en la sidebar
+st.sidebar.image("../assets/empopasto_logo.jpg", width="stretch")
+st.sidebar.markdown("---")
+
+# Menú de navegación con iconos profesionales
+st.sidebar.page_link("app.py", label="📊 Generalidades")
+st.sidebar.page_link("pages/aspectos_generales.py", label="📋 Aspectos Generales")
+st.sidebar.page_link("pages/acueducto_alcantarillado.py", label="💧 Acueducto y Alcantarillado")
+st.sidebar.page_link("pages/gestion_comunicacion.py", label="📢 Gestión y Comunicación")
+st.sidebar.page_link("pages/Conclusiones.py", label="✅ Conclusiones")
+
+st.sidebar.markdown("---")
+st.sidebar.image("../assets/one_logo.jpg", width=80)
+
 conn = st.connection("gsheets", type=GSheetsConnection)
 try:
     df_raw = conn.read(worksheet="Cuantitativas", ttl=0)
