@@ -20,7 +20,7 @@ st.markdown("""
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Agregar logos y menú en la sidebar
-st.sidebar.image("../assets/empopasto_logo.jpg", width="stretch")
+st.sidebar.image("assets/empopasto_logo.jpg", width="stretch")
 st.sidebar.markdown("---")
 
 # Menú de navegación con iconos profesionales
@@ -31,7 +31,7 @@ st.sidebar.page_link("pages/gestion_comunicacion.py", label="📢 Gestión y Com
 st.sidebar.page_link("pages/Conclusiones.py", label="✅ Conclusiones")
 
 st.sidebar.markdown("---")
-st.sidebar.image("../assets/one_logo.jpg", width=80)
+st.sidebar.image("assets/one_logo.jpg", width=80)
 try:
     df_raw = conn.read(worksheet="Cuantitativas", ttl=0)
     # Convertir pandas DataFrame a Polars DataFrame
