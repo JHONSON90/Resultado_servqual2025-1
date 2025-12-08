@@ -1,4 +1,3 @@
-from turtle import width
 import polars as pl
 import streamlit as st
 import plotly.express as px
