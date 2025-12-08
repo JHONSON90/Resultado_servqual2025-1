@@ -1,92 +1,70 @@
-from altair import value
 import polars as pl
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
+from streamlit_gsheets import GSheetsConnection
+import traceback
+import time
 
 st.set_page_config(page_title="Conclusiones", layout="wide")
 
-df = pl.read_csv("Formatos_Listos/Cuantitativas.csv", separator=",", encoding="utf-8", schema_overrides={"value": pl.Int64}, ignore_errors=True)
-df2 = pl.read_csv("Formatos_Listos/Cualitativas.csv", separator=",", encoding="utf-8", schema_overrides={"value": pl.String}, ignore_errors=True)
+conn = st.connection("gsheets", type=GSheetsConnection)
+try:
+    df_raw = conn.read(worksheet="Cuantitativas", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    df = pl.from_pandas(df_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Cuantitativas cargadas ({len(df)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Cuantitativas): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()  # Detiene la ejecución si falla
 
-st.title(":blue[Nivel de Satisfacción por Categoría]")
-st.text(".")
+try:
+    df2_raw = conn.read(worksheet="Cualitativas", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    df2 = pl.from_pandas(df2_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Cualitativas cargadas ({len(df2)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Cualitativas): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
 
-total = df.filter(pl.col("value") != 0).group_by("variable").agg(
-    pl.len().alias("count").alias("total")
-)
+try:
+    df3_raw = conn.read(worksheet="Nivel_Satisfaccion", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    df3 = pl.from_pandas(df3_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Nivel de Satisfacción cargado ({len(df3)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Nivel_Satisfaccion): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
 
-mayoresa3 = df.filter((pl.col("value") > 3)&(pl.col("Categoria") != "Otros")).group_by(["variable", "Categoria"]).agg(
-    pl.len().alias("count")
-)
-
-total_mayoresa3 = mayoresa3.join(total, on="variable", how="left")
-
-satisfaccion_total = total_mayoresa3.with_columns(
-    (pl.col("count").sum()/pl.col("total").sum()*100).alias("porcentaje")
-)
-
-# st.write(satisfaccion_total) #80.91%
-
-preguntas = pl.read_excel("Data/preguntas.xlsx")
-total_mayoresa3 = total_mayoresa3.join(preguntas, on="variable", how="left")
-
-total_mayoresa3 = total_mayoresa3.with_columns(
-    (pl.col("count")/pl.col("total")*100).alias("porcentaje")
-)
-
-promedios = total_mayoresa3.group_by("Categoria").agg(
-    pl.mean("porcentaje").round(2).alias("promedio")
-).sort("promedio", descending=True)
-
-
-# col1, col2 = st.columns(2)
-
-# with col1:
-fig = px.bar(promedios, x="Categoria", y="promedio", text="promedio", color="Categoria", color_discrete_sequence=["#006400", "#99EE99", "#FFD700", "#FF4444", "#CC0000", "#8B0000"])
-st.plotly_chart(fig)
-
-# st.write(promedios)
-
-capacidad_Respuesta = total_mayoresa3.filter(pl.col("Categoria") == "Capacidad de respuesta")
-
-elementos_tangibles = total_mayoresa3.filter(pl.col("Categoria") == "Elementos tangibles")
-
-# otros = total_mayoresa3.filter(pl.col("Categoria") == "Otros")
-# fig = px.bar(otros, x="Descripcion Pregunta", y="porcentaje", text_auto=True)
-# fig.update_traces(textposition='inside')
-# st.plotly_chart(fig, use_container_width="stretch")
-
-# with col2:
-total_problemas = pl.concat([capacidad_Respuesta, elementos_tangibles])
-total_problemas = total_problemas.with_columns(
-    pl.col("porcentaje").round(2)
-).sort("porcentaje", descending=True)
-fig = px.bar(total_problemas, y="Descripcion Pregunta", x="porcentaje", text_auto=True, color="Descripcion Pregunta", color_discrete_sequence=["#006400", "#99EE99", "#FFD700", "#FF4444", "#CC0000", "#8B0000"])
-fig.update_traces(textposition='inside')
-fig.update_layout(showlegend=False)
-st.plotly_chart(fig, use_container_width="stretch")
-
-st.markdown("""Con base en los resultados obtenidos en la encuesta de percepción, el nivel global de satisfacción de los usuarios con la gestión y los servicios de EMPOPASTO es del 81,93%. Este valor indica que, en términos generales, la prestación del servicio es bien valorada por la comunidad y se ubica dentro de un rango satisfactorio, de acuerdo con los estándares de medición utilizados en la metodología SERVQUAL.  
-Sin embargo, el porcentaje también evidencia que aún existe una brecha del 8,07% respecto a la meta institucional del 90%, lo cual refleja la existencia de oportunidades para fortalecer la experiencia del usuario y mejorar la percepción en dimensiones específicas del servicio.  
-Al realizar la evaluación individual de cada dimensión del modelo SERVQUAL, se identifican diferencias importantes entre los componentes:  
-:red[**Capacidad de Respuesta — 57,91%**]  
-    :material/arrow_right: Es el componente con mayor impacto negativo en el índice general de satisfacción, ubicándose en un nivel medio–bajo, por debajo de lo esperado para un servicio público esencial.  
-Las preguntas que más afectan el indicador son:  
-    :material/arrow_right: Satisfacción con la respuesta a las PQRS con un 41,52%, siendo el valor más crítico del componente.  
-    Esto sugiere demoras, falta de claridad o respuestas percibidas como insuficientes.  
-    :material/arrow_right: Orientación recibida durante el trámite con un 48,38%, lo que indica que los usuarios sienten falta de acompañamiento, información o claridad en los procesos.  
-    Estos resultados evidencian la necesidad de fortalecer los procesos de atención, seguimiento y cierre de solicitudes, particularmente en sectores como los estratos Bajo, Medio-Bajo y Bajo-Bajo, donde se concentran las principales inconformidades.  
-:yellow[**Elementos Tangibles — 66,67%**]  
-El componente de Tangibilidad presenta un nivel de aceptación moderado, con una valoración positiva mayoritaria, pero aún por debajo del umbral deseado del 90%.  
-El mayor reto dentro de este componente se encuentra en la percepción sobre la adecuación de las instalaciones físicas, donde se evidencia el valor más bajo de la dimensión. Esto indica que los usuarios reconocen avances, pero consideran que hay espacio para mejorar la comodidad, señalización, accesibilidad y modernización de los puntos de atención.  
-""")
+try:
+    df4_raw = conn.read(worksheet="Preguntas", ttl=0)
+    # Convertir pandas DataFrame a Polars DataFrame
+    preguntas = pl.from_pandas(df4_raw)
+    placeholder = st.empty()
+    placeholder.success(f"✅ Preguntas cargadas ({len(preguntas)} filas)")
+    time.sleep(0.5)
+    placeholder.empty()
+except Exception as e:
+    st.error(f"❌ Error al conectar con Google Sheets (Preguntas): {str(e)}")
+    st.error(f"Traceback: {traceback.format_exc()}")
+    st.stop()
 
 st.subheader(":blue[Aspectos generales del servicio]")
 col1, col2 = st.columns(2)
 with col1:
-    df3 = pl.read_csv("Formatos_Listos/para_niv_satisfaccion.csv", separator=",", encoding="utf-8", schema_overrides={"value": pl.Float64}, ignore_errors=True)
-
     aspectos_grales = df3.filter(
         pl.col("Nueva_Clasificacion") == "Aspectos Generales"
     )
@@ -241,7 +219,7 @@ with col1:
         .alias("promedio_2025")
         )
 
-    fig = px.bar(mcag_comparativo, x="Nueva_Clasificacion", y=["promedio_2023", "promedio_2024", "promedio_2025"], barmode="group", color_discrete_sequence=["#006400","#FFD700","#8B0000"], title="Comparativo por año", text_auto=True)
+    fig = px.bar(mcag_comparativo, x="Nueva_Clasificacion", y=["promedio_2023", "promedio_2024", "promedio_2025"], barmode="group", color_discrete_sequence=["#8B0000","#006400","#FFD700"], title="Comparativo por año", text_auto=True)
     fig.update_layout(
         bargap=0.2,  
         bargroupgap=0.05,
@@ -299,9 +277,11 @@ El nivel de satisfaccion global se encuentra en el rango de "muy satisfactorio" 
 
 """)
 
-st.write(df3)
+#st.write(df3)
 
-st.title(":blue[Conclusiones]")
+
+
+st.markdown("**Conclusiones**")
 
 st.markdown("""Tras analizar los resultados obtenidos a partir de la encuesta aplicada bajo la metodología SERVQUAL, se pueden establecer las siguientes conclusiones:  
 1. El nivel global de satisfacción de los usuarios es positivo, pero aún insuficiente  
@@ -364,7 +344,7 @@ El análisis permite identificar con claridad los focos de intervención, los gr
 
 """)
 
-st.title("Recomendaciones")
+st.markdown("**Recomendaciones**")
 st.markdown("""Con base en el análisis integral de los resultados obtenidos en la encuesta aplicada bajo la metodología SERVQUAL, se plantean las siguientes recomendaciones estratégicas para mejorar la experiencia del usuario, fortalecer los procesos internos y avanzar hacia el cumplimiento de la meta institucional del 90% de satisfacción:  
 
 **Fortalecer la Comunicación Institucional**  
